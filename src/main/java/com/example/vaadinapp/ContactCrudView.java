@@ -7,15 +7,16 @@ import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.radiobutton.RadioButtonGroup;
 import com.vaadin.flow.component.textfield.EmailField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
+import static com.example.vaadinapp.DataSource.DATABASE;
+import static com.example.vaadinapp.DataSource.IN_MEMORY;
 
 @Route("")
 public class ContactCrudView extends Div {
@@ -33,19 +34,28 @@ public class ContactCrudView extends Div {
     private Crud.EditMode currentEditMode;
     private String originalPhone = null;
     private String editingId = null;
-    private static List<String> editLockList = new ArrayList<>();
+    private static final Map<DataSource, List<String>> editLockMap = new HashMap<>();
     private Binder<Contact> binder;
-    private final boolean isDbEnabled = true;
+    private static DataSource selectedSource = DATABASE; // Default
 
     public ContactCrudView() {
         ContactDataProvider dataProvider;
-        if(isDbEnabled){
+        RadioButtonGroup<String> sourceSelector = new RadioButtonGroup<>();
+        sourceSelector.setLabel("Select Data Source");
+        sourceSelector.setItems(DATABASE.name(), IN_MEMORY.name());
+        sourceSelector.setValue(selectedSource.name());
+
+        sourceSelector.addValueChangeListener(e -> {
+            selectedSource = DataSource.valueOf(e.getValue());
+            getUI().ifPresent(ui -> ui.getPage().reload());
+        });
+        add(sourceSelector);
+        if (DATABASE.equals(selectedSource)) {
             dataProvider = new DbContactDataProvider();
-        }
-        else{
+        } else {
             dataProvider = new MapContactDataProvider();
         }
-
+        editLockMap.putIfAbsent(selectedSource, new ArrayList<>());
         crud = new Crud<>(Contact.class, createEditor(dataProvider));
         setupGrid();
         setupDataProvider(dataProvider);
@@ -75,6 +85,7 @@ public class ContactCrudView extends Div {
 
     private void setupDataProvider(ContactDataProvider dataProvider) {
         crud.setDataProvider(dataProvider);
+        List<String> editLockList = editLockMap.get(selectedSource);
 
         crud.addEditListener(event -> {
             crud.getGrid().getDataProvider().refreshAll();
@@ -117,6 +128,7 @@ public class ContactCrudView extends Div {
         });
         crud.addDeleteListener(deleteEvent -> {
             dataProvider.delete(deleteEvent.getItem());
+            editLockList.remove(editingId); // unlocking contact
             dataProvider.refreshAll();
         });
         crud.addCancelListener(cancelEvent -> {
