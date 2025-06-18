@@ -23,7 +23,7 @@ public class Contact {
     private String email;
 
 
-    public Contact(String firstName, String lastName, String street, String city, String country, String phone, String email) {
+    public Contact(String firstName, String lastName, String street, String city, String country, String phone, String email, String id) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.street = street;
@@ -31,6 +31,7 @@ public class Contact {
         this.email = email;
         this.city = city;
         this.country = country;
+        this.id = id;
     }
     public Contact(Contact other) {
         this.firstName = other.firstName;

@@ -12,9 +12,9 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.Route;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 @Route("")
@@ -33,10 +33,19 @@ public class ContactCrudView extends Div {
     private Crud.EditMode currentEditMode;
     private String originalPhone = null;
     private String editingId = null;
+    private static List<String> editLockList = new ArrayList<>();
     private Binder<Contact> binder;
+    private final boolean isDbEnabled = true;
 
     public ContactCrudView() {
-        ContactDataProvider dataProvider = new ContactDataProvider();
+        ContactDataProvider dataProvider;
+        if(isDbEnabled){
+            dataProvider = new DbContactDataProvider();
+        }
+        else{
+            dataProvider = new MapContactDataProvider();
+        }
+
         crud = new Crud<>(Contact.class, createEditor(dataProvider));
         setupGrid();
         setupDataProvider(dataProvider);
@@ -69,9 +78,15 @@ public class ContactCrudView extends Div {
 
         crud.addEditListener(event -> {
             crud.getGrid().getDataProvider().refreshAll();
+            if (editLockList.contains(event.getItem().getId())) {
+                Notification.show("This contact is already being edited..", 3000, Notification.Position.MIDDLE);
+                crud.setOpened(false);
+                return;
+            }
             currentEditMode = Crud.EditMode.EXISTING_ITEM;
             originalPhone = event.getItem().getPhone();
             editingId = event.getItem().getId();
+            editLockList.add(editingId);  // locking contact
             Optional<Contact> freshObject = dataProvider.findById(event.getItem().getId());
 
             if (freshObject.isPresent()) {
@@ -98,11 +113,15 @@ public class ContactCrudView extends Div {
             }
             dataProvider.save(item);
             dataProvider.refreshAll();
-
+            editLockList.remove(editingId); // unlocking contact
         });
         crud.addDeleteListener(deleteEvent -> {
             dataProvider.delete(deleteEvent.getItem());
             dataProvider.refreshAll();
+        });
+        crud.addCancelListener(cancelEvent -> {
+            dataProvider.refreshAll();
+            editLockList.remove(editingId); // unlocking contact
         });
     }
 
