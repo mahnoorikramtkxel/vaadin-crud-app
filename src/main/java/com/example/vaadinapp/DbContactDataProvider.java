@@ -6,28 +6,80 @@ import com.vaadin.flow.data.provider.SortDirection;
 
 import java.lang.reflect.Field;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
-
-public class DbContactDataProvider extends ContactDataProvider{
+public class DbContactDataProvider extends ContactDataProvider {
 
     private final ContactDao contactDao = new ContactDao();
     private Consumer<Long> sizeChangeListener;
+    private static final Map<String, Contact> cache = new ConcurrentHashMap<>();
+
+    public DbContactDataProvider() {
+        refreshCache(); // populate cache on initialization
+    }
+
+    // ✅ Refresh cache from DB
+    private void refreshCache() {
+        cache.clear();
+        for (Contact contact : contactDao.getAllContacts()) {
+            cache.put(contact.getId(), contact);
+        }
+    }
 
     @Override
     protected Stream<Contact> fetchFromBackEnd(Query<Contact, CrudFilter> query) {
         int offset = query.getOffset();
         int limit = query.getLimit();
 
-        Stream<Contact> stream = contactDao.getAllContacts().stream();
+        Stream<Contact> stream = cache.values().stream(); // use cache instead of direct DB call
+
         if (query.getFilter().isPresent()) {
             stream = stream.filter(predicate(query.getFilter().get()));
         }
 
         return stream.skip(offset).limit(limit);
     }
+
+    @Override
+    protected int sizeInBackEnd(Query<Contact, CrudFilter> query) {
+        long count = fetchFromBackEnd(query).count();
+
+        if (sizeChangeListener != null) {
+            sizeChangeListener.accept(count);
+        }
+
+        return (int) count;
+    }
+
+    Optional<Contact> findById(String id) {
+        return Optional.ofNullable(cache.get(id));
+    }
+
+    Optional<Contact> findByPhone(String phone) {
+        return cache.values().stream()
+                .filter(contact -> phone.equals(contact.getPhone()))
+                .findFirst();
+    }
+
+    void save(Contact item) {
+        contactDao.save(item);
+        refreshCache();
+    }
+
+    void delete(Contact item) {
+        contactDao.remove(item.getId());
+        refreshCache();
+    }
+//
+//    //Optional: expose manual refresh method
+//    public void refreshAlil() {
+//        refreshCache();
+//    }
+
     private static Predicate<Contact> predicate(CrudFilter filter) {
         return filter.getConstraints().entrySet().stream()
                 .map(constraint -> (Predicate<Contact>) contact -> {
@@ -46,8 +98,7 @@ public class DbContactDataProvider extends ContactDataProvider{
         return filter.getSortOrders().entrySet().stream().map(sortClause -> {
             try {
                 Comparator<Contact> comparator = Comparator.comparing(
-                        contact -> (Comparable) valueOf(sortClause.getKey(),
-                                contact));
+                        contact -> (Comparable) valueOf(sortClause.getKey(), contact));
 
                 if (sortClause.getValue() == SortDirection.DESCENDING) {
                     comparator = comparator.reversed();
@@ -69,31 +120,6 @@ public class DbContactDataProvider extends ContactDataProvider{
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
-    }
-    @Override
-    protected int sizeInBackEnd(Query<Contact, CrudFilter> query) {
-        long count = fetchFromBackEnd(query).count();
-
-        if (sizeChangeListener != null) {
-            sizeChangeListener.accept(count);
-        }
-
-        return (int) count;
-    }
-    void save(Contact item) {
-        contactDao.save(item);
-    }
-
-    Optional<Contact> findById(String id) {
-        return Optional.ofNullable(contactDao.findById(id));
-    }
-
-    Optional<Contact> findByPhone(String phone) {
-        return Optional.ofNullable(contactDao.findByPhone(phone));
-    }
-
-    void delete(Contact item) {
-        contactDao.remove(item.getId());
     }
 }
 

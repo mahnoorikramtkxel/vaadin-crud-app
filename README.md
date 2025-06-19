@@ -8,7 +8,7 @@ It allows switching between two data sources at runtime:
 
 ---
 
-## 🚀 Features
+## Features
 
 - Create, edit, delete contacts
 - Unique phone number validation
@@ -18,14 +18,12 @@ It allows switching between two data sources at runtime:
 
 ---
 
-## 🛠️ Technologies Used
+## Technologies Used
 
 - Java
 - Vaadin Flow
 - MySQL
 - Maven
 - Jetty (run with `mvn jetty:run`)
-
----
 
 

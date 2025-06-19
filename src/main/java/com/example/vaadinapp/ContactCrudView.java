@@ -68,7 +68,7 @@ public class ContactCrudView extends Div {
         Grid<Contact> grid = crud.getGrid();
 
         // Only show these columns (all columns shown by default):
-        List<String> visibleColumns = Arrays.asList(PHONE, FIRST_NAME, LAST_NAME,
+        List<String> visibleColumns = Arrays.asList(FIRST_NAME, LAST_NAME,
                 EMAIL, EDIT_COLUMN);
         grid.getColumns().forEach(column -> {
             String key = column.getKey();
@@ -90,7 +90,7 @@ public class ContactCrudView extends Div {
         crud.addEditListener(event -> {
             crud.getGrid().getDataProvider().refreshAll();
             if (editLockList.contains(event.getItem().getId())) {
-                Notification.show("This contact is already being edited..", 3000, Notification.Position.MIDDLE);
+                Notification.show("This contact is already being edited..", 5000, Notification.Position.MIDDLE);
                 crud.setOpened(false);
                 return;
             }
