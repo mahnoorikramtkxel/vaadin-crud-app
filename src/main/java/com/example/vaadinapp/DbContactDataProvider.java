@@ -14,15 +14,15 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 public class DbContactDataProvider extends ContactDataProvider {
 
-    private final ContactDao contactDao = new ContactDao();
+    private final ContactDao contactDao;
     private Consumer<Long> sizeChangeListener;
     private static final Map<String, Contact> cache = new ConcurrentHashMap<>();
 
-    public DbContactDataProvider() {
+    public DbContactDataProvider(ContactDao contactDao) {
+        this.contactDao = contactDao;
         refreshCache(); // populate cache on initialization
     }
 
-    // ✅ Refresh cache from DB
     private void refreshCache() {
         cache.clear();
         for (Contact contact : contactDao.getAllContacts()) {
@@ -74,11 +74,6 @@ public class DbContactDataProvider extends ContactDataProvider {
         contactDao.remove(item.getId());
         refreshCache();
     }
-//
-//    //Optional: expose manual refresh method
-//    public void refreshAlil() {
-//        refreshCache();
-//    }
 
     private static Predicate<Contact> predicate(CrudFilter filter) {
         return filter.getConstraints().entrySet().stream()

@@ -51,7 +51,7 @@ public class ContactCrudView extends Div {
         });
         add(sourceSelector);
         if (DATABASE.equals(selectedSource)) {
-            dataProvider = new DbContactDataProvider();
+            dataProvider = new DbContactDataProvider(new ContactDao());
         } else {
             dataProvider = new MapContactDataProvider();
         }
