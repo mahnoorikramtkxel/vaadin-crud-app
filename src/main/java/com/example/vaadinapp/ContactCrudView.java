@@ -26,10 +26,6 @@ public class ContactCrudView extends Div {
     private String FIRST_NAME = "firstName";
     private String LAST_NAME = "lastName";
     private String EMAIL = "email";
-    private String STREET = "street";
-    private String COUNTRY = "country";
-    private String CITY = "city";
-    private String PHONE = "phone";
     private String EDIT_COLUMN = "vaadin-crud-edit-column";
     private Crud.EditMode currentEditMode;
     private String originalPhone = null;
@@ -67,7 +63,6 @@ public class ContactCrudView extends Div {
     private void setupGrid() {
         Grid<Contact> grid = crud.getGrid();
 
-        // Only show these columns (all columns shown by default):
         List<String> visibleColumns = Arrays.asList(FIRST_NAME, LAST_NAME,
                 EMAIL, EDIT_COLUMN);
         grid.getColumns().forEach(column -> {
@@ -76,11 +71,6 @@ public class ContactCrudView extends Div {
                 grid.removeColumn(column);
             }
         });
-
-//        // Reorder the columns (alphabetical by default)
-//        grid.setColumnOrder(grid.getColumnByKey(FIRST_NAME),
-//                grid.getColumnByKey(LAST_NAME), grid.getColumnByKey(EMAIL),
-//                grid.getColumnByKey(EDIT_COLUMN));
     }
 
     private void setupDataProvider(ContactDataProvider dataProvider) {
